@@ -977,11 +977,11 @@ inline Lock_logger& Lock_logger::print_shift(EndlTag endl_tag){
             // we store the type of this entry and the data value
             pointer_array[w_array_index].type = ENDL;
 
-            // for the ENDL type we flush any data written to the pointer array so they become visible to the print thread - the endl type does not have a corresponding value to be written to the pointer array
-            flush();
-
             // we increment our p_array_index
             p_array_index++;
+
+            // for the ENDL type we flush any data written to the pointer array so they become visible to the print thread - the endl type does not have a corresponding value to be written to the pointer array
+            flush();
 
         }
         else{
@@ -1529,11 +1529,11 @@ inline Lock_logger& Lock_logger::operator<<(EndlTag endl_tag){
             // we store the type of this entry and the data value
             pointer_array[w_array_index].type = ENDL;
 
-            // for the ENDL type we flush any data written to the pointer array so they become visible to the print thread - the endl type does not have a corresponding value to be written to the pointer array
-            flush();
-
             // we increment our p_array_index
             p_array_index++;
+
+            // for the ENDL type we flush any data written to the pointer array so they become visible to the print thread - the endl type does not have a corresponding value to be written to the pointer array
+            flush();
 
         }
         else{

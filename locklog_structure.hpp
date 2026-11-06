@@ -19,6 +19,9 @@ private:
     // stdout file descriptor
     static constexpr int STDOUT = 1;
 
+    // logger file descriptor - this is a sticky argument and persists across calls to print even if it was just passed once, it is initialised to STDOUT
+    int f_descriptor = STDOUT;
+
     // minimum available space in bytes for parsing numbers - this constant sets the minimum space that would be available in the scratchpad before we format a number into the scratchpad, we declare this constant as a ssize_t because it would be compared to the result of pointer arithmetic
     static constexpr ssize_t MIN_NUM_SPACE = 30;
 
@@ -126,14 +129,18 @@ public:
     void flush();
 
     // the write to screen function prints all data in the scratchpad to the screen
-    void write_to_screen();
+    void write_to_fd(int fd);
 
     // the print function is used to print all print shifted data
-    void print();
+    void print(int fd = -1);
 
     // the free print function is used to print print shifted data from any number of Lock_logger objects
     template <typename... Lock_logger>
     static void print_many(Lock_logger&... p){ (p.print(), ...); }
+
+    // the free print function overload takes a file descriptor parameter and is used to print print shifted data from any number of Lock_logger objects to a file
+    template <typename... Lock_logger>
+    static void print_many(int fd, Lock_logger&... p) { (p.print(fd), ...); }
 
 public:
 

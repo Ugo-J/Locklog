@@ -144,7 +144,7 @@ inline Lock_logger::Lock_logger(const char* prelude_string, int64_t pointer_arra
 inline Lock_logger::~Lock_logger(){
 
     // we write to screen any unwritten data in the scratchpad if we have data other than the prelude in the scratchpad
-    if(scratchpad_cursor - scratchpad > prelude_len) write_to_screen();
+    if(scratchpad_cursor - scratchpad > prelude_len) write_to_fd(f_descriptor);
 
     // we delete our pointer array if allocated
     if(pointer_array != nullptr) delete [] pointer_array;
@@ -168,7 +168,7 @@ inline void Lock_logger::flush(){
 
 }
 
-inline void Lock_logger::write_to_screen(){
+inline void Lock_logger::write_to_fd(int fd){
 
     if(!error){
 
@@ -179,7 +179,7 @@ inline void Lock_logger::write_to_screen(){
 
         while(data_to_print > 0){
 
-            ssize_t data_printed = write(STDOUT, scratchpad_cursor, data_to_print);
+            ssize_t data_printed = write(fd, scratchpad_cursor, data_to_print);
 
             if(data_printed < 0){
 
@@ -208,11 +208,13 @@ inline void Lock_logger::write_to_screen(){
 
 }
 
-inline void Lock_logger::print(){
+inline void Lock_logger::print(int fd){
 // the print function simply writes anything written to the internal buffer that hasn't been printed yet to our scratchpad
 
     // only continue if no error
     if(!error){
+
+        if(fd >= 0) f_descriptor = fd;
 
         // we first get a local copy of our write_index variable
         int64_t loc_write_index = write_index.load(std::memory_order_acquire);
@@ -265,7 +267,7 @@ inline void Lock_logger::print(){
                     // getting here we don't have enough space in our scratchpad to hold this char* so we print the content of our scratchpad to screen and continue
 
                     // our write to screen function resets our scratchpad cursor internally before returning so we don't need to reset our scratchpad cursor again
-                    write_to_screen();
+                    write_to_fd(f_descriptor);
 
                     // now we check if the char* len is > our scratchpad size - prelude_len in which case we have to print the char* directly to screen as it can't be contained in the scratchpad
                     if(len > SIZE_OF_SCRATCHPAD - prelude_len){
@@ -275,7 +277,7 @@ inline void Lock_logger::print(){
 
                         while(len > 0){
 
-                            ssize_t data_printed = write(STDOUT, loc_data, len);
+                            ssize_t data_printed = write(f_descriptor, loc_data, len);
 
                             if(data_printed < 0){
 
@@ -323,7 +325,7 @@ inline void Lock_logger::print(){
                 else{
 
                     // getting here we have < our min num space in our scratchpad so we write to screen and continue
-                    write_to_screen();
+                    write_to_fd(f_descriptor);
 
                     continue;
 
@@ -342,7 +344,7 @@ inline void Lock_logger::print(){
                 else{
 
                     // getting here we have < our min num space in our scratchpad so we write to screen and continue
-                    write_to_screen();
+                    write_to_fd(f_descriptor);
 
                     continue;
 
@@ -361,7 +363,7 @@ inline void Lock_logger::print(){
                 else{
 
                     // getting here we have < our min num space in our scratchpad so we write to screen and continue
-                    write_to_screen();
+                    write_to_fd(f_descriptor);
 
                     continue;
 
@@ -380,7 +382,7 @@ inline void Lock_logger::print(){
                 else{
 
                     // getting here we have < our min num space in our scratchpad so we write to screen and continue
-                    write_to_screen();
+                    write_to_fd(f_descriptor);
 
                     continue;
 
@@ -399,7 +401,7 @@ inline void Lock_logger::print(){
                 else{
 
                     // getting here we have < our min num space in our scratchpad so we write to screen and continue
-                    write_to_screen();
+                    write_to_fd(f_descriptor);
 
                     continue;
 
@@ -415,18 +417,18 @@ inline void Lock_logger::print(){
                     *scratchpad_cursor++ = '\n';
 
                     // now we call our write to screen function
-                    write_to_screen();
+                    write_to_fd(f_descriptor);
 
                 }
                 else{
 
                     // getting here we don't have enough space in our scratchpad to add our new line character so we call our write to screen function and then call write system call directly on the new line character so we can print it without touching our scratchpad cursor
-                    write_to_screen();
+                    write_to_fd(f_descriptor);
 
                     // we call write system call
                     ssize_t data_printed = 0;
 
-                    do{ data_printed = write(STDOUT, "\n", 1); } while(data_printed < 0 && errno == EINTR);
+                    do{ data_printed = write(f_descriptor, "\n", 1); } while(data_printed < 0 && errno == EINTR);
                     if(data_printed < 0) failed_writes++;
 
                 }
@@ -441,8 +443,8 @@ inline void Lock_logger::print(){
         // we print our data if our scratchpad is full
         if(scratchpad_cursor > end_of_scratchpad){
 
-            // we write our scratchpad data to screen
-            write_to_screen();
+            // we write our scratchpad data to our file descriptor
+            write_to_fd(f_descriptor);
 
         }
 
